@@ -6,7 +6,7 @@ from snowflake.snowpark.functions import col
 
 import requests
 smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/watermelon")
-st.text(smoothiefroot_response)
+
 
 # ----------------------------------
 # Snowflake session
@@ -94,3 +94,6 @@ if st.session_state.order_submitted:
     if st.button("Place another order"):
         st.session_state.order_submitted = False
         st.rerun()
+
+
+st.text(smoothiefroot_response.json())
