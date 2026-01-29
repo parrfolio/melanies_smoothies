@@ -98,7 +98,13 @@ if st.session_state.order_submitted:
 
 #st.text(smoothiefruit_response.json())
 
+st.subheader(fruit_chosen + " Nutrition Information")
+
+smoothiefroot_response = requests.get(
+    "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
+)
+
 sf_df = st.dataframe(
-    data=smoothiefruit_response.json(),
+    data=smoothiefroot_response.json(),
     use_container_width=True
 )
