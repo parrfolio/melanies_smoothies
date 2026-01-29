@@ -2,19 +2,14 @@
 # ORDER FORM APP
 # ----------------------------------
 import streamlit as st
-from snowflake.snowpark.functions import col
-
 import requests
-smoothiefruit_response = requests.get("https://my.smoothiefroot.com/api/fruit/watermelon")
-
+from snowflake.snowpark.functions import col
 
 # ----------------------------------
 # Snowflake session
 # ----------------------------------
-
 cnx = st.connection("snowflake")
-session = cnx.session()            
-
+session = cnx.session()
 
 # ----------------------------------
 # Session state init
@@ -66,7 +61,7 @@ if ingredients_list:
     if st.button("Submit Order", disabled=too_many):
         session.create_dataframe(
             [[
-                None,                                # ORDER_UID (sequence)
+                None,                                # ORDER_UID (sequence default)
                 False,                               # ORDER_FILLED
                 customer_name.strip() or None,       # NAME_ON_ORDER
                 ingredients_string,                  # INGREDIENTS
@@ -96,17 +91,19 @@ if st.session_state.order_submitted:
         st.rerun()
 
 # ----------------------------------
-# Nutrition Information
+# Nutrition Information (PER FRUIT)
 # ----------------------------------
-#st.text(smoothiefruit_response.json())
+if ingredients_list:
+    st.header("🥗 Nutrition Information")
 
-st.subheader(fruit_chosen + " Nutrition Information")
+    for fruit_chosen in ingredients_list:
+        st.subheader(fruit_chosen + " Nutrition Information")
 
-smoothiefruit_response = requests.get(
-    "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
-)
+        smoothiefruit_response = requests.get(
+            "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
+        )
 
-sf_df = st.dataframe(
-    data=smoothiefruit_response.json(),
-    use_container_width=True
-)
+        st.dataframe(
+            smoothiefruit_response.json(),
+            use_container_width=True
+        )
