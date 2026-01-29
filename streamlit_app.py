@@ -1,5 +1,5 @@
 # ----------------------------------
-# ORDER FORM APP (SNIS)
+# ORDER FORM APP
 # ----------------------------------
 import streamlit as st
 import requests
@@ -26,17 +26,12 @@ st.write("Choose the fruits you want in your custom Smoothie!")
 # ----------------------------------
 # Load fruit options
 # ----------------------------------
-fruit_options_df = (
+fruits_df = (
     session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
-    .select(col("FRUIT_NAME"), col("SEARCH_ON"))
+    .select(col("FRUIT_NAME"))
     .sort(col("FRUIT_NAME"))
 )
 
-fruit_options_pd = fruit_options_df.to_pandas()
-
-# ----------------------------------
-# UI Inputs
-# ----------------------------------
 customer_name = st.text_input(
     "Name for this order (optional):",
     max_chars=100
@@ -44,7 +39,7 @@ customer_name = st.text_input(
 
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
-    fruit_options_pd["FRUIT_NAME"].tolist()
+    fruits_df
 )
 
 # ----------------------------------
@@ -58,8 +53,7 @@ if too_many:
 # Order preview + submit
 # ----------------------------------
 if ingredients_list:
-    # ✅ STORE UI LABELS EXACTLY (grader requirement)
-    ingredients_string = ", ".join(ingredients_list)
+    ingredients_string = ", ".join([str(x) for x in ingredients_list])
 
     st.subheader("Order Preview")
     st.text(ingredients_string)
@@ -67,22 +61,24 @@ if ingredients_list:
     if st.button("Submit Order", disabled=too_many):
         session.create_dataframe(
             [[
-                False,                         # ORDER_FILLED
-                customer_name.strip(),         # NAME_ON_ORDER
-                ingredients_string             # INGREDIENTS (UI labels)
+                None,                                # ORDER_UID (sequence default)
+                False,                               # ORDER_FILLED
+                customer_name.strip() or None,       # NAME_ON_ORDER
+                ingredients_string,                  # INGREDIENTS
+                None                                 # ORDER_TS (default)
             ]],
             schema=[
+                "ORDER_UID",
                 "ORDER_FILLED",
                 "NAME_ON_ORDER",
-                "INGREDIENTS"
+                "INGREDIENTS",
+                "ORDER_TS"
             ],
         ).write.mode("append").save_as_table(
-            "SMOOTHIES.PUBLIC.ORDERS",
-            column_order="name"
+            "SMOOTHIES.PUBLIC.ORDERS"
         )
 
         st.session_state.order_submitted = True
-        st.rerun()
 
 # ----------------------------------
 # Confirmation state
@@ -100,19 +96,36 @@ if st.session_state.order_submitted:
 if ingredients_list:
     st.header("🥗 Nutrition Information")
 
-    for fruit_name in ingredients_list:
-        search_on = fruit_options_pd.loc[
-            fruit_options_pd["FRUIT_NAME"] == fruit_name,
+    # Pull FRUIT_NAME → SEARCH_ON mapping
+    my_dataframe = (
+        session.table("smoothies.public.fruit_options")
+        .select(col("FRUIT_NAME"), col("SEARCH_ON"))
+    )
+
+    pd_df = my_dataframe.to_pandas()
+
+    for fruit_chosen in ingredients_list:
+        search_on = pd_df.loc[
+            pd_df["FRUIT_NAME"] == fruit_chosen,
             "SEARCH_ON"
         ].iloc[0]
 
-        st.subheader(f"{fruit_name} Nutrition Information")
+        st.write(
+            f"The search value for **{fruit_chosen}** is **{search_on}**"
+        )
+
+        st.subheader(f"{fruit_chosen} Nutrition Information")
 
         smoothiefruit_response = requests.get(
-            f"https://my.smoothiefroot.com/api/fruit/{search_on}"
+            "https://my.smoothiefroot.com/api/fruit/" + search_on
         )
 
         st.dataframe(
             smoothiefruit_response.json(),
             use_container_width=True
         )
+
+    # Optional debug view
+    st.dataframe(pd_df)
+
+    st.stop()
