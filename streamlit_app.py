@@ -108,9 +108,14 @@ if ingredients_list:
             .select(col("FRUIT_NAME"), col("SEARCH_ON"))
         )
         
-        st.dataframe(
+        #st.dataframe(
             data=my_dataframe,
             use_container_width=True
         )
+        
+        #st.stop()
+        pd_df = my_dataframe.to_pandas()
+        
+        st.dataframe(pd_df)
         
         st.stop()
