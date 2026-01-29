@@ -45,25 +45,26 @@ ingredients_list = st.multiselect(
 # ----------------------------------
 # Validation
 # ----------------------------------
-too_many = len(ingredients_list) > 5
-if too_many:
+if len(ingredients_list) > 5:
     st.error("Please choose 5 ingredients or fewer.")
 
 # ----------------------------------
 # Order preview + submit
 # ----------------------------------
 if ingredients_list:
-    ingredients_string = ", ".join([str(x) for x in ingredients_list])
+
+    # ✅ ALWAYS convert list → string
+    ingredients_string = ", ".join(map(str, ingredients_list))
 
     st.subheader("Order Preview")
     st.text(ingredients_string)
 
-    if st.button("Submit Order", disabled=too_many):
+    if st.button("Submit Order", disabled=len(ingredients_list) > 5):
         session.create_dataframe(
             [[
-                False,                     # ORDER_FILLED
-                customer_name.strip(),     # NAME_ON_ORDER (must not be NULL)
-                ingredients_string         # INGREDIENTS
+                False,                         # ORDER_FILLED
+                customer_name.strip(),         # NAME_ON_ORDER
+                ingredients_string             # INGREDIENTS (STRING)
             ]],
             schema=[
                 "ORDER_FILLED",
@@ -80,6 +81,7 @@ if ingredients_list:
         )
 
         st.session_state.order_submitted = True
+        st.rerun()
 
 # ----------------------------------
 # Confirmation state
@@ -97,14 +99,15 @@ if st.session_state.order_submitted:
 if ingredients_list:
     st.header("🥗 Nutrition Information")
 
-    my_dataframe = (
+    fruit_lookup_df = (
         session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
         .select(col("FRUIT_NAME"), col("SEARCH_ON"))
     )
 
-    pd_df = my_dataframe.to_pandas()
+    pd_df = fruit_lookup_df.to_pandas()
 
     for fruit_chosen in ingredients_list:
+        # fruit_chosen is a STRING here
         search_on = pd_df.loc[
             pd_df["FRUIT_NAME"] == fruit_chosen,
             "SEARCH_ON"
@@ -113,12 +116,10 @@ if ingredients_list:
         st.subheader(f"{fruit_chosen} Nutrition Information")
 
         smoothiefruit_response = requests.get(
-            "https://my.smoothiefroot.com/api/fruit/" + search_on
+            f"https://my.smoothiefroot.com/api/fruit/{search_on}"
         )
 
         st.dataframe(
             smoothiefruit_response.json(),
             use_container_width=True
         )
-
-    st.stop()
