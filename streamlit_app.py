@@ -61,9 +61,9 @@ if ingredients_list:
     if st.button("Submit Order", disabled=too_many):
         session.create_dataframe(
             [[
-                False,                       # ORDER_FILLED
-                customer_name.strip(),       # NAME_ON_ORDER (must NOT be null)
-                ingredients_string           # INGREDIENTS
+                False,                     # ORDER_FILLED
+                customer_name.strip(),     # NAME_ON_ORDER (must not be NULL)
+                ingredients_string         # INGREDIENTS
             ]],
             schema=[
                 "ORDER_FILLED",
@@ -71,7 +71,12 @@ if ingredients_list:
                 "INGREDIENTS"
             ],
         ).write.mode("append").save_as_table(
-            "SMOOTHIES.PUBLIC.ORDERS"
+            "SMOOTHIES.PUBLIC.ORDERS",
+            column_order=[
+                "ORDER_FILLED",
+                "NAME_ON_ORDER",
+                "INGREDIENTS"
+            ]
         )
 
         st.session_state.order_submitted = True
@@ -92,7 +97,6 @@ if st.session_state.order_submitted:
 if ingredients_list:
     st.header("🥗 Nutrition Information")
 
-    # Pull FRUIT_NAME → SEARCH_ON mapping
     my_dataframe = (
         session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
         .select(col("FRUIT_NAME"), col("SEARCH_ON"))
@@ -106,10 +110,6 @@ if ingredients_list:
             "SEARCH_ON"
         ].iloc[0]
 
-        st.write(
-            f"The search value for **{fruit_chosen}** is **{search_on}**"
-        )
-
         st.subheader(f"{fruit_chosen} Nutrition Information")
 
         smoothiefruit_response = requests.get(
@@ -120,8 +120,5 @@ if ingredients_list:
             smoothiefruit_response.json(),
             use_container_width=True
         )
-
-    # Optional debug view
-    st.dataframe(pd_df)
 
     st.stop()
