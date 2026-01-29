@@ -103,7 +103,14 @@ if ingredients_list:
             "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
         )
 
+        my_dataframe = (
+            session.table("smoothies.public.fruit_options")
+            .select(col("FRUIT_NAME"), col("SEARCH_ON"))
+        )
+        
         st.dataframe(
-            smoothiefruit_response.json(),
+            data=my_dataframe,
             use_container_width=True
         )
+        
+        st.stop()
