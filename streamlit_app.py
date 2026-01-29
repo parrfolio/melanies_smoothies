@@ -59,26 +59,22 @@ if ingredients_list:
     st.text(ingredients_string)
 
     if st.button("Submit Order", disabled=too_many):
-        session.create_dataframe(
-            [[
-                None,                                # ORDER_UID (sequence default)
-                False,                               # ORDER_FILLED
-                customer_name.strip() or None,       # NAME_ON_ORDER
-                ingredients_string,                  # INGREDIENTS
-                None                                 # ORDER_TS (default)
-            ]],
-            schema=[
-                "ORDER_UID",
-                "ORDER_FILLED",
-                "NAME_ON_ORDER",
-                "INGREDIENTS",
-                "ORDER_TS"
-            ],
-        ).write.mode("append").save_as_table(
-            "SMOOTHIES.PUBLIC.ORDERS"
-        )
+    session.create_dataframe(
+        [[
+            False,                         # ORDER_FILLED
+            customer_name.strip(),         # NAME_ON_ORDER
+            ingredients_string             # INGREDIENTS
+        ]],
+        schema=[
+            "ORDER_FILLED",
+            "NAME_ON_ORDER",
+            "INGREDIENTS"
+        ],
+    ).write.mode("append").save_as_table(
+        "SMOOTHIES.PUBLIC.ORDERS"
+    )
 
-        st.session_state.order_submitted = True
+    st.session_state.order_submitted = True
 
 # ----------------------------------
 # Confirmation state
