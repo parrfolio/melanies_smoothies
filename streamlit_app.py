@@ -24,7 +24,28 @@ st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
 st.write("Choose the fruits you want in your custom Smoothie!")
 
 # ----------------------------------
-# Load fruit options
+# DEBUG: Show FRUIT_NAME + SEARCH_ON
+# (This is the section shown in the image)
+# ----------------------------------
+my_dataframe = (
+    session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
+    .select(
+        col("FRUIT_NAME"),
+        col("SEARCH_ON")
+    )
+    .sort(col("FRUIT_NAME"))
+)
+
+st.dataframe(
+    data=my_dataframe,
+    use_container_width=True
+)
+
+# STOP HERE so we can focus on this section
+st.stop()
+
+# ----------------------------------
+# Load fruit options for multiselect
 # ----------------------------------
 fruits_df = (
     session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
