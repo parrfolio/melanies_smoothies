@@ -8,7 +8,7 @@ from snowflake.snowpark.functions import col
 # Snowflake session
 # ----------------------------------
 
-cnx = st.connection(("snowflake")
+cnx = st.connection("snowflake")
 session = cnx.session()            
 
 
