@@ -96,4 +96,9 @@ if st.session_state.order_submitted:
         st.rerun()
 
 
-st.text(smoothiefroot_response.json())
+#st.text(smoothiefroot_response.json())
+
+sf_df = st.dataframe(
+    data=smoothiefruit_response.json(),
+    use_container_width=True
+)
