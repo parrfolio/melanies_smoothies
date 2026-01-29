@@ -52,8 +52,6 @@ if len(ingredients_list) > 5:
 # Order preview + submit
 # ----------------------------------
 if ingredients_list:
-
-    # ✅ ALWAYS convert list → string
     ingredients_string = ", ".join(map(str, ingredients_list))
 
     st.subheader("Order Preview")
@@ -64,7 +62,7 @@ if ingredients_list:
             [[
                 False,                         # ORDER_FILLED
                 customer_name.strip(),         # NAME_ON_ORDER
-                ingredients_string             # INGREDIENTS (STRING)
+                ingredients_string             # INGREDIENTS
             ]],
             schema=[
                 "ORDER_FILLED",
@@ -73,11 +71,7 @@ if ingredients_list:
             ],
         ).write.mode("append").save_as_table(
             "SMOOTHIES.PUBLIC.ORDERS",
-            column_order=[
-                "ORDER_FILLED",
-                "NAME_ON_ORDER",
-                "INGREDIENTS"
-            ]
+            column_order="name"   # ✅ CORRECT
         )
 
         st.session_state.order_submitted = True
@@ -107,7 +101,6 @@ if ingredients_list:
     pd_df = fruit_lookup_df.to_pandas()
 
     for fruit_chosen in ingredients_list:
-        # fruit_chosen is a STRING here
         search_on = pd_df.loc[
             pd_df["FRUIT_NAME"] == fruit_chosen,
             "SEARCH_ON"
