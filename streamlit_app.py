@@ -24,7 +24,7 @@ st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
 st.write("Choose the fruits you want in your custom Smoothie!")
 
 # ----------------------------------
-# Load fruit options (FRUIT_NAME for UI)
+# Load fruit options (UI vs canonical)
 # ----------------------------------
 fruit_df = (
     session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
@@ -33,8 +33,6 @@ fruit_df = (
 )
 
 fruit_pd = fruit_df.to_pandas()
-
-fruit_names = fruit_pd["FRUIT_NAME"].tolist()
 
 # ----------------------------------
 # User Inputs
@@ -46,7 +44,7 @@ customer_name = st.text_input(
 
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
-    fruit_names
+    fruit_pd["FRUIT_NAME"].tolist()
 )
 
 # ----------------------------------
@@ -60,8 +58,16 @@ if too_many:
 # Order Preview + Submit
 # ----------------------------------
 if ingredients_list:
-    # ✅ STORE FRUIT_NAME exactly as selected
-    ingredients_string = ", ".join(ingredients_list)
+    # 🔑 Map UI labels → canonical SEARCH_ON values (preserve order)
+    search_on_values = [
+        fruit_pd.loc[
+            fruit_pd["FRUIT_NAME"] == fruit,
+            "SEARCH_ON"
+        ].iloc[0]
+        for fruit in ingredients_list
+    ]
+
+    ingredients_string = ", ".join(search_on_values)
 
     st.subheader("Order Preview")
     st.text(ingredients_string)
@@ -69,9 +75,9 @@ if ingredients_list:
     if st.button("Submit Order", disabled=too_many):
         session.create_dataframe(
             [[
-                False,                         # ORDER_FILLED
-                customer_name.strip() or None, # NAME_ON_ORDER
-                ingredients_string             # INGREDIENTS (UI values)
+                False,                          # ORDER_FILLED
+                customer_name.strip() or None,  # NAME_ON_ORDER
+                ingredients_string              # INGREDIENTS (canonical)
             ]],
             schema=[
                 "ORDER_FILLED",
@@ -102,13 +108,8 @@ if st.session_state.order_submitted:
 if ingredients_list:
     st.header("🥗 Nutrition Information")
 
-    for fruit in ingredients_list:
-        search_on = fruit_pd.loc[
-            fruit_pd["FRUIT_NAME"] == fruit,
-            "SEARCH_ON"
-        ].iloc[0]
-
-        st.subheader(f"{fruit} Nutrition Information")
+    for fruit_name, search_on in zip(ingredients_list, search_on_values):
+        st.subheader(f"{fruit_name} Nutrition Information")
 
         response = requests.get(
             f"https://my.smoothiefroot.com/api/fruit/{search_on}"
