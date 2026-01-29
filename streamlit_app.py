@@ -24,7 +24,7 @@ st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
 st.write("Choose the fruits you want in your custom Smoothie!")
 
 # ----------------------------------
-# Load fruit options (UI vs canonical)
+# Load fruit options (FRUIT_NAME for UI, SEARCH_ON for API)
 # ----------------------------------
 fruit_df = (
     session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
@@ -33,6 +33,7 @@ fruit_df = (
 )
 
 fruit_pd = fruit_df.to_pandas()
+fruit_names = fruit_pd["FRUIT_NAME"].tolist()
 
 # ----------------------------------
 # User Inputs
@@ -44,7 +45,7 @@ customer_name = st.text_input(
 
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
-    fruit_pd["FRUIT_NAME"].tolist()
+    fruit_names
 )
 
 # ----------------------------------
@@ -55,19 +56,13 @@ if too_many:
     st.error("Please choose 5 ingredients or fewer.")
 
 # ----------------------------------
-# Order Preview + Submit
+# Order preview + submit
 # ----------------------------------
 if ingredients_list:
-    # 🔑 Map UI labels → canonical SEARCH_ON values (preserve order)
-    search_on_values = [
-        fruit_pd.loc[
-            fruit_pd["FRUIT_NAME"] == fruit,
-            "SEARCH_ON"
-        ].iloc[0]
-        for fruit in ingredients_list
-    ]
-
-    ingredients_string = ", ".join(search_on_values)
+    # ✅ LESSON-CORRECT: build string with spaces + trailing space
+    ingredients_string = ""
+    for fruit_chosen in ingredients_list:
+        ingredients_string += fruit_chosen + " "
 
     st.subheader("Order Preview")
     st.text(ingredients_string)
@@ -75,15 +70,11 @@ if ingredients_list:
     if st.button("Submit Order", disabled=too_many):
         session.create_dataframe(
             [[
-                False,                          # ORDER_FILLED
-                customer_name.strip() or None,  # NAME_ON_ORDER
-                ingredients_string              # INGREDIENTS (canonical)
+                False,                              # ORDER_FILLED
+                (customer_name.strip() or None),    # NAME_ON_ORDER
+                ingredients_string                  # INGREDIENTS (lesson format)
             ]],
-            schema=[
-                "ORDER_FILLED",
-                "NAME_ON_ORDER",
-                "INGREDIENTS"
-            ],
+            schema=["ORDER_FILLED", "NAME_ON_ORDER", "INGREDIENTS"],
         ).write.mode("append").save_as_table(
             "SMOOTHIES.PUBLIC.ORDERS",
             column_order="name"
@@ -93,7 +84,7 @@ if ingredients_list:
         st.rerun()
 
 # ----------------------------------
-# Confirmation
+# Confirmation state
 # ----------------------------------
 if st.session_state.order_submitted:
     st.success("Order submitted! 🥤")
@@ -108,11 +99,19 @@ if st.session_state.order_submitted:
 if ingredients_list:
     st.header("🥗 Nutrition Information")
 
-    for fruit_name, search_on in zip(ingredients_list, search_on_values):
-        st.subheader(f"{fruit_name} Nutrition Information")
+    for fruit_chosen in ingredients_list:
+        search_on = fruit_pd.loc[
+            fruit_pd["FRUIT_NAME"] == fruit_chosen,
+            "SEARCH_ON"
+        ].iloc[0]
 
-        response = requests.get(
+        st.subheader(f"{fruit_chosen} Nutrition Information")
+
+        smoothiefruit_response = requests.get(
             f"https://my.smoothiefroot.com/api/fruit/{search_on}"
         )
 
-        st.dataframe(response.json(), use_container_width=True)
+        st.dataframe(
+            smoothiefruit_response.json(),
+            use_container_width=True
+        )
